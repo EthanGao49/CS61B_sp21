@@ -18,25 +18,32 @@ public class Primes {
      * @param n an arbitary integrer
      * @return True iff. the integer is prime
      */
-    public static boolean isPrime(int n) {
-        // Corner cases
-        if (n <= 1 || n == 4) return false;
-        if (n <= 3) return true;
-
-        int k = 3; // Try k = 3 times
-        while (k > 0)
-        {
-            // Pick a random number in [2..n-2]
-            // Above corner cases make sure that n > 4
-            int a = 2 + (int)(Math.random() % (n - 4));
-
-            // Fermat's little theorem
-            if (power(a, n - 1, n) != 1)
-                return false;
-
-            k--;
+//    public static boolean isPrime(int n) {
+//        // Corner cases
+//        if (n <= 1 || n == 4) return false;
+//        if (n <= 3) return true;
+//
+//        int k = 3; // Try k = 3 times
+//        while (k > 0)
+//        {
+//            // Pick a random number in [2..n-2]
+//            // Above corner cases make sure that n > 4
+//            int a = 2 + (int)(Math.random() % (n - 4));
+//
+//            // Fermat's little theorem
+//            if (power(a, n - 1, n) != 1)
+//                return false;
+//
+//            k--;
+//        }
+//
+//        return true;
+//    }
+    public static boolean isPrime(int n){
+        if(n <= 2) return true;
+        for(int i = 2; i < n; i++){
+            if(n%i == 0) return false;
         }
-
         return true;
     }
 
