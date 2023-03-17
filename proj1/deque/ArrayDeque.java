@@ -15,21 +15,13 @@ public class ArrayDeque<Type> implements Deque<Type>{
      *
      * @param index the index of the current node
      * @param offset the value is positive for next node and negative for previous node
-     *               offset is equal to or more than -1!
      *
      */
-    public int getOffsetIndex(int index, int offset){
-        assert (offset >= -1);
-
-        if (isEmpty()){
-            //return the index of the sentinel
-            return 0;
-        }
+    private int getOffsetIndex(int index, int offset){
         if (index + offset > array.length - 1){
-            // array[0] is used for sentinel
-            return index + offset - array.length + 1;
-        } else if (index + offset < 1) {
-            return array.length - 1;
+            return index + offset - array.length;
+        } else if (index + offset < 0) {
+            return index + offset + array.length;
         }
         return index + offset;
     }
@@ -52,10 +44,18 @@ public class ArrayDeque<Type> implements Deque<Type>{
 
     public void resize(int n) {
         Type[] resizedArray = (Type[]) new Object[n];
-        int frontItemCounts = frontIndex;
-        // The current value of size is 1 bigger than the real value.
-        int endItemCounts = size - frontItemCounts;
-        int updatedFrontIndex = resizedArray.length - endItemCounts;
+        int endItemIndex = getOffsetIndex(frontIndex, size);
+        int frontItemCounts, endItemCounts, updatedFrontIndex;
+        if (frontIndex <= endItemIndex) {
+            // ItemCounts = size + 1(sentinel)
+            frontItemCounts = size;
+            endItemCounts = 0;
+            updatedFrontIndex = frontIndex;
+        } else {
+            endItemCounts = array.length - frontIndex;
+            frontItemCounts = size - endItemCounts;
+            updatedFrontIndex = resizedArray.length - endItemIndex;
+        }
         System.arraycopy(array, 0, resizedArray, 0, frontItemCounts);
         System.arraycopy(array, frontIndex, resizedArray, updatedFrontIndex, endItemCounts);
         // update the frontIndex
@@ -65,35 +65,47 @@ public class ArrayDeque<Type> implements Deque<Type>{
 
     @Override
     public void addFirst(Type item) {
-        size += 1;
-        if (size > array.length - 1){
+        if (size == array.length){
             resize(array.length*2);
         }
         frontIndex = getOffsetIndex(frontIndex, -1);
         array[frontIndex] = item;
+        size += 1;
     }
 
     @Override
     public void addLast(Type item) {
-        if (isEmpty()) {
-            //If the ArrayDeque is empty, the frontIndex is always 0.
-            frontIndex = 1;
-        }
-        size += 1;
-        if (size > array.length - 1){
+        if (size == array.length){
             resize(array.length*2);
         }
-        array[getOffsetIndex(frontIndex, size - 1)] = item;
+        array[getOffsetIndex(frontIndex, size)] = item;
+        if (isEmpty()){
+            frontIndex = getOffsetIndex(frontIndex, size);
+        }
+        size += 1;
     }
 
     @Override
     public Type removeFirst() {
-        return null;
+        if (isEmpty()){
+            return null;
+        }
+        Type x = get(0);
+        array[frontIndex] = null;
+        frontIndex = getOffsetIndex(frontIndex, 1);
+        size -= 1;
+        return x;
     }
 
     @Override
     public Type removeLast() {
-        return null;
+        if (isEmpty()){
+            return null;
+        }
+        Type x = get(size - 1);
+        array[getOffsetIndex(frontIndex, size)] = null;
+        size -= 1;
+        return x;
     }
 
     @Override
