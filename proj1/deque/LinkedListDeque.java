@@ -1,5 +1,7 @@
 package deque;
 
+import java.util.Iterator;
+
 public class LinkedListDeque<T> implements Deque<T>{
 
     public class DequeNode {
@@ -22,6 +24,29 @@ public class LinkedListDeque<T> implements Deque<T>{
         //Reduce the number of special cases
         sentinel.last = sentinel;
         sentinel.next = sentinel;
+    }
+
+    private class ListedDequeIterator implements Iterator<T> {
+        private DequeNode node;
+        public ListedDequeIterator() {
+            node = sentinel;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return node.next != sentinel;
+        }
+
+        @Override
+        public T next() {
+            T returnValue = node.item;
+            node = node.next;
+            return returnValue;
+        }
+    }
+
+    public Iterator<T> iterator() {
+        return new ListedDequeIterator();
     }
 
     @Override
