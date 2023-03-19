@@ -1,5 +1,7 @@
 package deque;
 
+import java.util.Iterator;
+
 public class ArrayDeque<T> implements Deque<T>{
     private int frontIndex;
     private int size;
@@ -10,6 +12,31 @@ public class ArrayDeque<T> implements Deque<T>{
         frontIndex = 0;
         array = (T []) new Object[8];
     }
+
+
+    private class ArrayDequeIterator implements Iterator<T> {
+        private int wizPos;
+        public ArrayDequeIterator() {
+            wizPos = 0;
+        }
+        @Override
+        public boolean hasNext() {
+            return wizPos < size();
+        }
+
+        @Override
+        public T next() {
+            T returnItem = get(wizPos);
+            wizPos += 1;
+            return returnItem;
+        }
+    }
+
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
+
+
 
     /**  Take in an index and a direction, return the index of the next node
      *

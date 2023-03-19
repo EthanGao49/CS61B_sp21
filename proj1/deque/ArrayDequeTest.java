@@ -35,18 +35,18 @@ public class ArrayDequeTest {
     public void resizeExpandTest() {
         ArrayDeque<Integer> testArrayDeque = new ArrayDeque<>();
         // expand the array
-        for (int i = 0; i < 100; i ++){
+        for (int i = 0; i < 100; i ++) {
             testArrayDeque.addLast(i);
         }
-        for (int i = 0; i < 100; i ++){
+        for (int i = 0; i < 100; i ++) {
             assertEquals((int) testArrayDeque.get(i), i);
         }
 
         ArrayDeque<Integer> testDeque = new ArrayDeque<>();
-        for (int i = 0; i < 100; i ++){
+        for (int i = 0; i < 100; i ++) {
             testDeque.addFirst(i);
         }
-        for (int i = 0; i < 100; i ++){
+        for (int i = 0; i < 100; i ++) {
             assertEquals((int) testDeque.get(i), 99 - i);
         }
 
@@ -58,7 +58,7 @@ public class ArrayDequeTest {
         for (int i = 0; i < 100; i ++) {
             testArrayDeque.addLast(i);
         }
-        for (int i = 0; i < 100; i ++){
+        for (int i = 0; i < 100; i ++) {
             assertEquals((int) testArrayDeque.removeFirst(), i);
         }
 
@@ -115,7 +115,7 @@ public class ArrayDequeTest {
                 if (L.isEmpty()) return;
                 int lastVal = L.get(L.size() - 1);
                 assert (L.removeLast() == lastVal);
-            } else if (operationNumber == 3){
+            } else if (operationNumber == 3) {
                 // removeFirst
                 if (L.isEmpty()) return;
                 int firstVal = L.get(0);

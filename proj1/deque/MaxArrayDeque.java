@@ -10,27 +10,6 @@ public class MaxArrayDeque<T> extends ArrayDeque<T> implements Iterable<T>{
         this.c = c;
     }
 
-    private class ArrayDequeIterator implements Iterator<T> {
-        private int wizPos;
-        public ArrayDequeIterator() {
-            wizPos = 0;
-        }
-        @Override
-        public boolean hasNext() {
-            return wizPos < size();
-        }
-
-        @Override
-        public T next() {
-            T returnItem = get(wizPos);
-            wizPos += 1;
-            return returnItem;
-        }
-    }
-
-    public Iterator<T> iterator() {
-        return new ArrayDequeIterator();
-    }
     public T max() {
         if (isEmpty()) {
             return null;
