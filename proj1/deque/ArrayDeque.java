@@ -1,14 +1,14 @@
 package deque;
 
-public class ArrayDeque<Type> implements Deque<Type>{
+public class ArrayDeque<T> implements Deque<T>{
     private int frontIndex;
     private int size;
-    private Type[] array;
+    private T[] array;
 
-    public ArrayDeque(){
+    public ArrayDeque() {
         size = 0;
         frontIndex = 0;
-        array = (Type []) new Object[8];
+        array = (T []) new Object[8];
     }
 
     /**  Take in an index and a direction, return the index of the next node
@@ -32,7 +32,7 @@ public class ArrayDeque<Type> implements Deque<Type>{
     }
 
     @Override
-    public Type get(int index) {
+    public T get(int index) {
         assert (index >= 0 && index < size);
         return array[getOffsetIndex(frontIndex, index)];
     }
@@ -43,8 +43,8 @@ public class ArrayDeque<Type> implements Deque<Type>{
     }
 
     public void resize(int n) {
-        Type[] resizedArray = (Type[]) new Object[n];
-        int endItemIndex = getOffsetIndex(frontIndex, size);
+        T[] resizedArray = (T[]) new Object[n];
+        int endItemIndex = getOffsetIndex(frontIndex, size - 1);
         int frontItemCounts, endItemCounts, updatedFrontIndex;
         if (frontIndex <= endItemIndex) {
             // ItemCounts = size + 1(sentinel)
@@ -54,7 +54,7 @@ public class ArrayDeque<Type> implements Deque<Type>{
         } else {
             endItemCounts = array.length - frontIndex;
             frontItemCounts = size - endItemCounts;
-            updatedFrontIndex = resizedArray.length - endItemIndex;
+            updatedFrontIndex = resizedArray.length - endItemCounts;
         }
         System.arraycopy(array, 0, resizedArray, 0, frontItemCounts);
         System.arraycopy(array, frontIndex, resizedArray, updatedFrontIndex, endItemCounts);
@@ -64,7 +64,7 @@ public class ArrayDeque<Type> implements Deque<Type>{
     }
 
     @Override
-    public void addFirst(Type item) {
+    public void addFirst(T item) {
         if (size == array.length){
             resize(array.length*2);
         }
@@ -74,8 +74,8 @@ public class ArrayDeque<Type> implements Deque<Type>{
     }
 
     @Override
-    public void addLast(Type item) {
-        if (size == array.length){
+    public void addLast(T item) {
+        if (size == array.length) {
             resize(array.length*2);
         }
         array[getOffsetIndex(frontIndex, size)] = item;
@@ -86,11 +86,11 @@ public class ArrayDeque<Type> implements Deque<Type>{
     }
 
     @Override
-    public Type removeFirst() {
-        if (isEmpty()){
+    public T removeFirst() {
+        if (isEmpty()) {
             return null;
         }
-        Type x = get(0);
+        T x = get(0);
         array[frontIndex] = null;
         frontIndex = getOffsetIndex(frontIndex, 1);
         size -= 1;
@@ -98,11 +98,11 @@ public class ArrayDeque<Type> implements Deque<Type>{
     }
 
     @Override
-    public Type removeLast() {
-        if (isEmpty()){
+    public T removeLast() {
+        if (isEmpty()) {
             return null;
         }
-        Type x = get(size - 1);
+        T x = get(size - 1);
         array[getOffsetIndex(frontIndex, size)] = null;
         size -= 1;
         return x;

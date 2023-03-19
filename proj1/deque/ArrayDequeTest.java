@@ -41,6 +41,15 @@ public class ArrayDequeTest {
         for (int i = 0; i < 100; i ++){
             assertEquals((int) testArrayDeque.get(i), i);
         }
+
+        ArrayDeque<Integer> testDeque = new ArrayDeque<>();
+        for (int i = 0; i < 100; i ++){
+            testDeque.addFirst(i);
+        }
+        for (int i = 0; i < 100; i ++){
+            assertEquals((int) testDeque.get(i), 99 - i);
+        }
+
     }
 
     @Test
@@ -104,7 +113,7 @@ public class ArrayDequeTest {
             } else if (operationNumber == 2) {
                 // removeLast
                 if (L.isEmpty()) return;
-                int lastVal = L.get(L.size());
+                int lastVal = L.get(L.size() - 1);
                 assert (L.removeLast() == lastVal);
             } else if (operationNumber == 3){
                 // removeFirst
