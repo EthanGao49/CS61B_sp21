@@ -130,7 +130,7 @@ public class ArrayDeque<T> implements Deque<T> {
             return null;
         }
         T x = get(size - 1);
-        array[getOffsetIndex(frontIndex, size)] = null;
+        array[getOffsetIndex(frontIndex, size - 1)] = null;
         size -= 1;
         return x;
     }
