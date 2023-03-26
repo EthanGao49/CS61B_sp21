@@ -2,15 +2,22 @@ package gitlet;
 
 // TODO: any imports you need here
 
+import java.io.File;
+import java.io.Serializable;
 import java.util.Date; // TODO: You'll likely use this in this class
+import java.util.HashMap;
+import java.util.Map;
+
+import static gitlet.Repository.COMMITS_DIR;
+import static gitlet.Utils.*;
 
 /** Represents a gitlet commit object.
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
  *
- *  @author TODO
+ *  @author Yichun Gao
  */
-public class Commit {
+public class Commit implements Serializable {
     /**
      * TODO: add instance variables here.
      *
@@ -21,6 +28,72 @@ public class Commit {
 
     /** The message of this Commit. */
     private String message;
+    /** The timestamp of this commit. */
+    private Date Date;
+    /**
+     * The blobs of this commit.
+     * A hashMap from file name to SHA1 ID.
+     */
+    private HashMap<String, String> blobs;
+    private String[] parents;
 
     /* TODO: fill in the rest of this class. */
+    public Commit(String message, HashMap<String, String> blobs, String[] parent) {
+        this.message = message;
+        this.blobs = blobs;
+        this.parents = parent;
+        this.Date = new Date();
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public HashMap<String, String> getBlobs() {
+        return blobs;
+    }
+
+    public Date getDate() {
+        return Date;
+    }
+
+    public String[] getParents() {
+        return parents;
+    }
+
+    public void save(String ID) {
+        File commitPrefix = join(COMMITS_DIR ,ID.substring(0, 2));
+        if (!commitPrefix.exists()) {
+            commitPrefix.mkdir();
+        }
+        writeObject(join(commitPrefix, ID.substring(2)), this);
+    }
+
+    public static Commit readCommit (String ID) {
+        File commitPrefix = join(COMMITS_DIR, ID.substring(0, 2));
+        File commit = join(commitPrefix, ID.substring(2));
+        if (commit.exists()) {
+            return readObject(commit, Commit.class);
+        }
+        System.out.println("None such commit exists.");
+        return null;
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getDate().toString());
+        sb.append(message);
+        sb.append(blobs.toString());
+        sb.append(parents.toString());
+        return sb.toString();
+    }
+
+    public HashMap<String, String> blobsClone() {
+        HashMap<String, String> newBlobs = new HashMap<>();
+        for (Map.Entry<String, String> entry : blobs.entrySet()) {
+            newBlobs.put(entry.getKey(), entry.getValue());
+        }
+        return newBlobs;
+    }
+
 }
