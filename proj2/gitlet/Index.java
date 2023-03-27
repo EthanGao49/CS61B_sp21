@@ -54,4 +54,8 @@ public class Index implements Serializable {
     public HashMap<String, String> getDeleted() {
         return deleted;
     }
+
+    public boolean containKey(String key) {
+        return staged.containsKey(key) || deleted.containsKey(key);
+    }
 }

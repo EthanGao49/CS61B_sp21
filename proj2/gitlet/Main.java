@@ -41,8 +41,16 @@ public class Main {
                 break;
             case "status":
                 Repository.printStatus();
+                break;
             case "checkout":
                 Repository.checkout(args);
+                break;
+            case "branch":
+                Repository.createNewBranch(args[1]);
+                break;
+            case "rm-branch":
+                Repository.deleteBranch(args[1]);
+                break;
         }
     }
 
@@ -59,7 +67,7 @@ public class Main {
                     System.exit(0);
                 }
                 break;
-            case "add", "rm", "find":
+            case "add", "rm", "find", "branch", "rm-branch":
                 if (args.length != 2) {
                     System.out.println("Incorrect operands.");
                     System.exit(0);

@@ -3,18 +3,15 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static gitlet.Utils.*;
-
-// TODO: any imports you need here
 
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
  *
- *  @author TODO
+ *  @author Yichun Gao
  */
 public class Repository {
     /**
@@ -58,6 +55,7 @@ public class Repository {
         root.save(commitID);
         writeContents(HEAD, commitID);
         branches.put("master", commitID);
+        branches.put("head", "master");
         writeObject(BRANCHES, branches);
     }
 
@@ -104,8 +102,11 @@ public class Repository {
         HashMap<String, String> newHeadBlobs = headCommit.blobsClone();
 
         /** Modify the new hashMap according to the stagingArea.*/
-        for (Map.Entry<String, String> entry: stagingArea.getStaged().entrySet()) {
+        for (Map.Entry<String, String> entry : stagingArea.getStaged().entrySet()) {
             newHeadBlobs.put(entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<String, String> entry : stagingArea.getDeleted().entrySet()) {
+            newHeadBlobs.remove(entry.getKey());
         }
 
         /** Create a new Commit object and save it. */
@@ -122,11 +123,18 @@ public class Repository {
         /** Modify and save the head pointer and master pointer */
         writeContents(HEAD, newCommitID);
         HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
-        branches.put("master", newCommitID);
+        String currBranch = headID;
+        for (Map.Entry<String, String> entry : branches.entrySet()) {
+            if (headID.equals(entry.getValue())) {
+                currBranch = entry.getKey();
+            }
+        }
+        branches.put(currBranch, newCommitID);
         writeObject(BRANCHES, branches);
     }
 
     public static void removeOneFile(String fileName) {
+        checkIfGitletDir();
         Index stagingArea = Index.readIndex(INDEX);
         Commit headCommit = getHeadCommit();
         if (stagingArea.getStaged().containsKey(fileName)) {
@@ -137,12 +145,15 @@ public class Repository {
         if (headCommit.getBlobs().containsKey(fileName)) {
             stagingArea.getDeleted().put(fileName, "DELETE");
             stagingArea.save();
+            File file = join(CWD, fileName);
+            file.delete();
             return;
         }
         System.out.println("No reason to remove the file.");
     }
 
     public static void printLog() {
+        checkIfGitletDir();
         Commit headCommit = getHeadCommit();
         String head = readContentsAsString(HEAD);
         while (!headCommit.getMessage().equals("Init Repo")) {
@@ -154,6 +165,7 @@ public class Repository {
     }
 
     public static void printGlobalLog() {
+        checkIfGitletDir();
         File[] prefixList = COMMITS_DIR.listFiles();
         for (File prefix : prefixList) {
             for (String fileName : plainFilenamesIn(prefix)) {
@@ -175,7 +187,15 @@ public class Repository {
         return Commit.readCommit(head);
     }
 
+    private static byte[] getBlobContents(String contentsID) {
+        File filePrefix = join(BLOBS_DIR, contentsID.substring(0, 2));
+        File file = join(filePrefix, contentsID.substring(2));
+        byte[] fileContents = readContents(file);
+        return fileContents;
+    }
+
     public static void findCommit(String arg) {
+        checkIfGitletDir();
         File[] prefixList = COMMITS_DIR.listFiles();
         for (File prefix : prefixList) {
             for (String fileName : plainFilenamesIn(prefix)) {
@@ -189,6 +209,7 @@ public class Repository {
     }
 
     public static void printStatus() {
+        checkIfGitletDir();
         HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
         Commit headCommit = getHeadCommit();
         Index stagingArea = Index.readIndex(INDEX);
@@ -198,10 +219,13 @@ public class Repository {
         /** Print branches. */
         sb.append("=== Branches ===\n");
         for (Map.Entry<String, String> entry : branches.entrySet()) {
-            if (entry.getValue().equals(headID)) {
-                sb.append("*" + entry.getKey() + "\n");
-            } else {
-                sb.append((entry.getKey()) + "\n");
+            String key = entry.getKey();
+            if (!key.equals("head")) {
+                if (key.equals(branches.get("head"))) {
+                    sb.append("*" + key + "\n");
+                } else {
+                    sb.append(key + "\n");
+                }
             }
         }
 
@@ -217,12 +241,144 @@ public class Repository {
             sb.append(entry.getKey() + "\n");
         }
 
-        /**Print modification not staged for commit.*/
-        //sb.append("\n=== Modification Not Staged for Commit ===\n");
+        /** Modified files*/
+        File[] fileList = CWD.listFiles(File::isFile);
+        sb.append("\n=== Modified files ===\n");
+        for (File file : fileList) {
+            if ( (! stagingArea.containKey(file.getName())) && (! unModifiedCheck(file))) {
+                sb.append(file.getName() + "\n");
+            }
+        }
+
+        /** Untracked files. */
+        sb.append("\n=== Untracked Files ===\n");
+        for (File file : fileList) {
+            if (! trackedCheck(file)) {
+                sb.append(file.getName() + "\n");
+            }
+        }
 
         System.out.println(sb);
     }
 
-    public static void checkout(String[] args) {
+    public static void checkout(String[] args) throws IOException {
+        checkIfGitletDir();
+        if (args.length == 3 && args[1].equals("--")) {
+            checkoutFile(args[2]);
+        } else if (args.length == 2) {
+            checkoutBranch(args[1]);
+        } else if (args.length == 4 && args[2].equals("--")) {
+            checkoutFile(args[1], args[3]);
+        }
+    }
+
+    private static boolean unModifiedCheck(File file) {
+        Commit headCommit = getHeadCommit();
+        byte[] fileContent = readContents(file);
+        String contentID = sha1(fileContent);
+        if (headCommit.getBlobs().containsKey(file.getName())) {
+            return contentID.equals(headCommit.getBlobs().get(file.getName()));
+        }
+        /** File is not contained in the head commit. */
+        return false;
+    }
+
+    private static boolean trackedCheck(File file) {
+        Commit headCommit = getHeadCommit();
+        Index stagingArea = Index.readIndex(INDEX);
+        return stagingArea.containKey(file.getName()) || headCommit.getBlobs().containsKey(file.getName());
+    }
+
+    /** Checkout a file to the version in the most recent commit. */
+    private static void checkoutFile(String fileName) throws IOException {
+        Commit headCommit = getHeadCommit();
+        HashMap<String, String> blobs = headCommit.getBlobs();
+        if (!blobs.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            return;
+        }
+        File file = join(CWD, fileName);
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        String contentsID = blobs.get(fileName);
+        byte[] fileContents = getBlobContents(contentsID);
+        writeContents(file, fileContents);
+    }
+
+    /** Checkout a file to the specific version according to the commit id. */
+    private static void checkoutFile(String commitID, String fileName) throws IOException {
+        Commit targetCommit = Commit.readCommit(commitID);
+        HashMap<String, String> blobs = targetCommit.getBlobs();
+        if (!blobs.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            return;
+        }
+        File file = join(CWD, fileName);
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        String contentsID = blobs.get(fileName);
+        byte[] fileContents = getBlobContents(contentsID);
+        writeContents(file, fileContents);
+    }
+
+    /** TODO: This function has not been tested. */
+    private static void checkoutBranch(String branchName) {
+        HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
+        String head = readContentsAsString(HEAD);
+        Commit headCommits = getHeadCommit();
+        Index stagingArea = Index.readIndex(INDEX);
+        if (!branches.containsKey(branchName)) {
+            System.out.println("No such branch exists.");
+            System.exit(0);
+        }
+
+        String branchID = branches.get(branchName);
+        if (branches.get("head").equals(branchName)) {
+            System.out.println("No need to checkout the current branch.");
+            System.exit(0);
+        }
+
+        File[] currFileList = CWD.listFiles(File::isFile);
+        for (File file : currFileList) {
+            if ((!stagingArea.isEmpty()) || (!unModifiedCheck(file)) || (!trackedCheck(file)) ){
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+            }
+        }
+
+        //Todo: Change the current work space to the version in target branch.
+
+        writeContents(HEAD, branchID);
+        branches.put("head", branchName);
+        writeObject(BRANCHES, branches);
+    }
+
+    public static void createNewBranch(String branchName) {
+        checkIfGitletDir();
+        HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
+        String head = readContentsAsString(HEAD);
+        branches.put(branchName, head);
+        branches.put("head", branchName);
+        writeObject(BRANCHES, branches);
+    }
+
+
+    public static void deleteBranch(String branchName) {
+        HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
+
+        if (!branches.containsKey(branchName)) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+
+        if (branches.get("head").equals(branchName)) {
+            System.out.println("Cannot remove the current branch.");
+            System.exit(0);
+        }
+
+        branches.remove(branchName);
+        writeObject(BRANCHES, branches);
     }
 }
