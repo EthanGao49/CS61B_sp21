@@ -3,6 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static gitlet.Utils.*;
@@ -42,19 +43,22 @@ public class Repository {
         GITLET_DIR.mkdir();
         BLOBS_DIR.mkdir();
         COMMITS_DIR.mkdir();
-        INDEX.createNewFile(); //String
+        INDEX.createNewFile(); //Index
         HEAD.createNewFile(); //String
-        BRANCHES.createNewFile(); //Index
+        BRANCHES.createNewFile(); //HashMap<String, String>
 
-        Index index = new Index(INDEX);
-        writeObject(INDEX, index);
+        Index index = new Index();
+        index.save();
+
+        HashMap<String, String> branches = new HashMap<>();
 
         Commit root = new Commit("Init Repo", new HashMap<String, String>(), new String[2]);
         String commitID = sha1(root.toString());
 
         root.save(commitID);
         writeContents(HEAD, commitID);
-        writeContents(BRANCHES, "master");
+        branches.put("master", commitID);
+        writeObject(BRANCHES, branches);
     }
 
     public static void addOneFile(String file) throws IOException {
@@ -86,14 +90,20 @@ public class Repository {
         stagingArea.save();
     }
 
-    private void commit(String message) {
+    public static void commit(String message) {
+        checkIfGitletDir();
+        Index stagingArea = Index.readIndex(INDEX);
+        if (stagingArea.isEmpty()) {
+            System.out.println("No changes added to the commit.");
+            return;
+        }
+
         /** Copy the headCommit's blobs */
         String headID = readContentsAsString(HEAD);
         Commit headCommit = getHeadCommit();
         HashMap<String, String> newHeadBlobs = headCommit.blobsClone();
 
         /** Modify the new hashMap according to the stagingArea.*/
-        Index stagingArea = Index.readIndex(INDEX);
         for (Map.Entry<String, String> entry: stagingArea.getStaged().entrySet()) {
             newHeadBlobs.put(entry.getKey(), entry.getValue());
         }
@@ -108,8 +118,51 @@ public class Repository {
         /** Clear stagingArea and save it */
         stagingArea.clear();
         stagingArea.save();
+
+        /** Modify and save the head pointer and master pointer */
+        writeContents(HEAD, newCommitID);
+        HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
+        branches.put("master", newCommitID);
+        writeObject(BRANCHES, branches);
     }
 
+    public static void removeOneFile(String fileName) {
+        Index stagingArea = Index.readIndex(INDEX);
+        Commit headCommit = getHeadCommit();
+        if (stagingArea.getStaged().containsKey(fileName)) {
+            stagingArea.getStaged().remove(fileName);
+            stagingArea.save();
+            return;
+        }
+        if (headCommit.getBlobs().containsKey(fileName)) {
+            stagingArea.getDeleted().put(fileName, "DELETE");
+            stagingArea.save();
+            return;
+        }
+        System.out.println("No reason to remove the file.");
+    }
+
+    public static void printLog() {
+        Commit headCommit = getHeadCommit();
+        String head = readContentsAsString(HEAD);
+        while (!headCommit.getMessage().equals("Init Repo")) {
+            System.out.println(headCommit.toString(head));
+            head = headCommit.getParents()[0];
+            headCommit = Commit.readCommit(head);
+        }
+        System.out.println(headCommit.toString(head));
+    }
+
+    public static void printGlobalLog() {
+        File[] prefixList = COMMITS_DIR.listFiles();
+        for (File prefix : prefixList) {
+            for (String fileName : plainFilenamesIn(prefix)) {
+                File file = join(prefix, fileName);
+                Commit commit = readObject(file, Commit.class);
+                System.out.println(commit.toString(prefix + fileName));
+            }
+        }
+    }
     private static void checkIfGitletDir() {
         if (!GITLET_DIR.exists()) {
             System.out.println("Not in an initialized Gitlet directory.");
@@ -120,5 +173,56 @@ public class Repository {
     private static Commit getHeadCommit() {
         String head = readContentsAsString(HEAD);
         return Commit.readCommit(head);
+    }
+
+    public static void findCommit(String arg) {
+        File[] prefixList = COMMITS_DIR.listFiles();
+        for (File prefix : prefixList) {
+            for (String fileName : plainFilenamesIn(prefix)) {
+                File file = join(prefix, fileName);
+                Commit commit = readObject(file, Commit.class);
+                if (commit.getMessage().equals(arg)) {
+                    System.out.println(commit.toString(prefix + fileName));
+                }
+            }
+        }
+    }
+
+    public static void printStatus() {
+        HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
+        Commit headCommit = getHeadCommit();
+        Index stagingArea = Index.readIndex(INDEX);
+        String headID = readContentsAsString(HEAD);
+
+        StringBuilder sb  = new StringBuilder();
+        /** Print branches. */
+        sb.append("=== Branches ===\n");
+        for (Map.Entry<String, String> entry : branches.entrySet()) {
+            if (entry.getValue().equals(headID)) {
+                sb.append("*" + entry.getKey() + "\n");
+            } else {
+                sb.append((entry.getKey()) + "\n");
+            }
+        }
+
+        /** Print Staged Files */
+        sb.append("\n=== Staged Files ===\n");
+        for (Map.Entry<String, String> entry : stagingArea.getStaged().entrySet()) {
+            sb.append(entry.getKey() + "\n");
+        }
+
+        /** Print Removed Files */
+        sb.append("\n=== Removed Files ===\n");
+        for (Map.Entry<String, String> entry : stagingArea.getDeleted().entrySet()) {
+            sb.append(entry.getKey() + "\n");
+        }
+
+        /**Print modification not staged for commit.*/
+        //sb.append("\n=== Modification Not Staged for Commit ===\n");
+
+        System.out.println(sb);
+    }
+
+    public static void checkout(String[] args) {
     }
 }

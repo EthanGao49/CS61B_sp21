@@ -6,19 +6,18 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 
+import static gitlet.Repository.INDEX;
 import static gitlet.Utils.*;
 
 public class Index implements Serializable {
-    private File indexAddr;
     private HashMap<String, String> staged;
     private HashMap<String, String> deleted;
 
     public void save() {
-        writeObject(indexAddr, this);
+        writeObject(INDEX, this);
     }
 
-    public Index(File file) {
-        indexAddr = file;
+    public Index() {
         staged = new HashMap<>();
         deleted = new HashMap<>();
     }
@@ -28,7 +27,7 @@ public class Index implements Serializable {
             return readObject(index, Index.class);
         }
         System.out.println("None such head file exists.");
-        return new Index(index);
+        return new Index();
     }
 
     public void add(String fileName, String contentsID, Commit headCommit) {
@@ -40,7 +39,7 @@ public class Index implements Serializable {
     }
 
     public boolean isEmpty() {
-        return staged.isEmpty();
+        return staged.isEmpty() && deleted.isEmpty();
     }
 
     public void clear() {
@@ -50,5 +49,9 @@ public class Index implements Serializable {
 
     public HashMap<String, String> getStaged() {
         return staged;
+    }
+
+    public HashMap<String, String> getDeleted() {
+        return deleted;
     }
 }

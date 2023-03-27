@@ -24,6 +24,25 @@ public class Main {
                 Repository.addOneFile(args[1]);
                 break;
             // TODO: FILL THE REST IN
+            case "commit":
+                Repository.commit(args[1]);
+                break;
+            case "rm":
+                Repository.removeOneFile(args[1]);
+                break;
+            case "log":
+                Repository.printLog();
+                break;
+            case "global-log":
+                Repository.printGlobalLog();
+                break;
+            case "find":
+                Repository.findCommit(args[1]);
+                break;
+            case "status":
+                Repository.printStatus();
+            case "checkout":
+                Repository.checkout(args);
         }
     }
 
@@ -34,13 +53,13 @@ public class Main {
         }
         String firstArg = args[0];
         switch (firstArg) {
-            case "init" :
+            case "init", "log", "global-log", "status":
                 if (args.length != 1) {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
                 }
                 break;
-            case "add" :
+            case "add", "rm", "find":
                 if (args.length != 2) {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
@@ -48,6 +67,12 @@ public class Main {
                 break;
             case "commit":
                 if (args.length != 2) {
+                    System.out.println("Please enter a commit message.");
+                    System.exit(0);
+                }
+                break;
+            case "checkout":
+                if (args.length < 2 || args.length > 4) {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
                 }

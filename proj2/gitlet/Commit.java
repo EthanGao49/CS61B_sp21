@@ -79,12 +79,25 @@ public class Commit implements Serializable {
         return null;
     }
 
+    public String toString(String commitID) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("===\n");
+        sb.append("Commit: " + commitID + "\n");
+        if (parents[1] != null) {
+            sb.append("Merged: " + parents[0].substring(0, 10) + parents[1].substring(0, 10));
+        }
+        sb.append("Date: " + getDate().toString() + "\n");
+        sb.append("Message: " + message + "\n");
+        return sb.toString();
+    }
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(getDate().toString());
-        sb.append(message);
-        sb.append(blobs.toString());
-        sb.append(parents.toString());
+        sb.append("===\n");
+        sb.append("Date: " + getDate().toString() + "\n");
+        sb.append("Message: " + message + "\n");
+        sb.append("Blobs: " + blobs.toString() + "\n");
+        sb.append("First Parent: " + parents[0] + "\n");
         return sb.toString();
     }
 
