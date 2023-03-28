@@ -3,6 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static gitlet.Utils.*;
@@ -123,12 +124,7 @@ public class Repository {
         /** Modify and save the head pointer and master pointer */
         writeContents(HEAD, newCommitID);
         HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
-        String currBranch = headID;
-        for (Map.Entry<String, String> entry : branches.entrySet()) {
-            if (headID.equals(entry.getValue())) {
-                currBranch = entry.getKey();
-            }
-        }
+        String currBranch = branches.get("head");
         branches.put(currBranch, newCommitID);
         writeObject(BRANCHES, branches);
     }
@@ -323,8 +319,31 @@ public class Repository {
         writeContents(file, fileContents);
     }
 
+    private static void checkoutCommit(String commitID) throws IOException {
+        Commit targetCommit = Commit.readCommit(commitID);
+        File[] fileList = CWD.listFiles(File::isFile);
+
+        /** Delete the files that are not contained in target commit. */
+        for (File file : fileList) {
+            if (! targetCommit.contain(file)) {
+                restrictedDelete(file);
+            }
+        }
+
+        /** Overwrite the files in the work space. */
+        HashMap<String, String> blobs = targetCommit.blobsClone();
+        for (Map.Entry<String, String> entry : blobs.entrySet()) {
+            File file = join(CWD, entry.getKey());
+            if (! file.exists()) {
+                file.createNewFile();
+            }
+            byte[] content = getBlobContents(entry.getValue());
+            writeContents(file, content);
+        }
+    }
+
     /** TODO: This function has not been tested. */
-    private static void checkoutBranch(String branchName) {
+    private static void checkoutBranch(String branchName) throws IOException {
         HashMap<String, String> branches = readObject(BRANCHES, HashMap.class);
         String head = readContentsAsString(HEAD);
         Commit headCommits = getHeadCommit();
@@ -349,6 +368,7 @@ public class Repository {
         }
 
         //Todo: Change the current work space to the version in target branch.
+        checkoutCommit(branchID);
 
         writeContents(HEAD, branchID);
         branches.put("head", branchName);
@@ -380,5 +400,9 @@ public class Repository {
 
         branches.remove(branchName);
         writeObject(BRANCHES, branches);
+    }
+
+    public static void mergeBranch(String branchName) {
+
     }
 }

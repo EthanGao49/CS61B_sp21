@@ -109,4 +109,12 @@ public class Commit implements Serializable {
         return newBlobs;
     }
 
+    public boolean contain(String key) {
+        return blobs.containsKey(key);
+    }
+
+    public boolean contain(File file) {
+        return blobs.containsKey(file.getName());
+    }
+
 }

@@ -51,6 +51,9 @@ public class Main {
             case "rm-branch":
                 Repository.deleteBranch(args[1]);
                 break;
+            case "merge":
+                Repository.mergeBranch(args[1]);
+                break;
         }
     }
 
@@ -67,7 +70,7 @@ public class Main {
                     System.exit(0);
                 }
                 break;
-            case "add", "rm", "find", "branch", "rm-branch":
+            case "add", "rm", "find", "branch", "rm-branch", "merge":
                 if (args.length != 2) {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
